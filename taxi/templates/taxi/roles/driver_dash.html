@@ -1,0 +1,149 @@
+{% extends "taxi/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-header bg-dark text-white text-center fw-bold">МОЙ СТАТУС</div>
+                <div class="card-body text-center">
+                    <div class="h3 text-success fw-bold">{{ user.balance }} ₸</div>
+                    <div class="small text-muted mb-3">Ваш текущий баланс</div>
+                    <span class="badge bg-success p-2 mb-2"><i class="fas fa-check-circle"></i> На смене</span>
+                    <h5 class="mt-2">{{ user.get_full_name|default:user.username }}</h5>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4 border-0 {% if not assigned_car %}bg-light{% endif %}">
+                <div class="card-header bg-primary text-white text-center fw-bold">АВТОМОБИЛЬ</div>
+                <div class="card-body text-center">
+                    {% if assigned_car %}
+                    <div class="mb-2">
+                        <i class="fas fa-car fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0">{{ assigned_car.brand }} {{ assigned_car.model }}</h5>
+                    <div class="badge bg-dark mb-2">{{ assigned_car.plate_number }}</div>
+                    <p class="small text-muted mb-0">Класс: <strong>{{ assigned_car.car_class.name }}</strong></p>
+                    {% else %}
+                    <div class="py-3">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                        <p class="text-danger fw-bold small">АВТОМОБИЛЬ НЕ НАЗНАЧЕН</p>
+                        <small class="text-muted">Обратитесь к менеджеру для получения машины</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if current_order %}
+            <div class="card border-warning shadow animate__animated animate__pulse animate__infinite">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    <i class="fas fa-spinner fa-spin"></i> ВЫПОЛНЯЕТСЯ: #{{ current_order.id }}
+                </div>
+                <div class="card-body">
+                    <p class="mb-1 small text-muted">МАРШРУТ:</p>
+                    <p class="fw-bold">{{ current_order.point_a }} <br>↓<br> {{ current_order.point_b }}</p>
+                    <h4 class="text-success text-center my-3">{{ current_order.cost }} ₸</h4>
+                    <hr>
+                    <form action="{% url 'complete_order' current_order.id %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success w-100 btn-lg shadow-sm fw-bold">
+                            ЗАВЕРШИТЬ ПОЕЗДКУ
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-secondary text-center shadow-sm">
+                <i class="fas fa-pause-circle fa-2x mb-2 d-block"></i>
+                У вас пока нет активных заказов
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-8">
+            <h3 class="mb-4"><i class="fas fa-broadcast-tower text-danger"></i> ЭФИР (Новые заказы)</h3>
+
+            <div id="orders-list">
+                {% for order in available_orders %}
+                <div class="card mb-3 border-left-warning shadow-sm">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1 text-primary">{{ order.point_a }} → {{ order.point_b }}</h5>
+                            <small class="text-muted">Тариф: {{ order.tariff.name }} | Создан: {{
+                                order.date_time|time:"H:i" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="h4 mb-2">{{ order.cost }} ₸</div>
+                            <a href="{% url 'accept_order' order.id %}"
+                                class="btn btn-outline-success px-4 fw-bold shadow-sm">Принять</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div id="no-orders-msg" class="text-center py-5">
+                    <i class="fas fa-coffee fa-3x text-muted mb-3"></i>
+                    <p class="text-muted h5">Заказов пока нет. Можно выпить кофе!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-left-warning {
+        border-left: 5px solid #ffc107;
+        transition: 0.3s;
+    }
+
+    .border-left-warning:hover {
+        transform: translateX(5px);
+    }
+</style>
+
+<script>
+    const socket = new WebSocket(
+        (window.location.protocol === 'https:' ? 'wss://' : 'ws://')
+        + window.location.host
+        + '/ws/orders/'
+    );
+
+    socket.onopen = function (e) {
+        console.log("✅ Подключено к Эфиру такси");
+    };
+
+    socket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        console.log("🚀 Новый заказ получен через WebSocket:", data);
+
+        const ordersList = document.getElementById('orders-list');
+        const noOrdersMsg = document.getElementById('no-orders-msg');
+
+        // Убираем сообщение "нет заказов", если оно есть
+        if (noOrdersMsg) noOrdersMsg.remove();
+
+        const newOrderHtml = `
+            <div class="card mb-3 border-left-warning shadow-sm animate__animated animate__backInDown">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1 text-primary">${data.point_a} → ${data.point_b}</h5>
+                        <small class="text-muted">Тариф: ${data.tariff} | Только что</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="h4 mb-2">${data.cost} ₸</div>
+                        <a href="/driver/accept/${data.id}/" class="btn btn-success px-4 fw-bold shadow-sm">Принять</a>
+                    </div>
+                </div>
+            </div>`;
+
+        ordersList.insertAdjacentHTML('afterbegin', newOrderHtml);
+
+        // Звук (убедись, что браузер разрешает автовоспроизведение)
+        new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(e => console.log('Нужен клик для звука'));
+    };
+
+    socket.onerror = function (e) {
+        console.error("❌ Ошибка сокета. Проверь, запущен ли Daphne (ASGI).");
+    };
+</script>
+{% endblock %}

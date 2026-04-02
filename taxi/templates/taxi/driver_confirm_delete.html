@@ -1,0 +1,21 @@
+﻿{% extends "taxi/base.html" %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 40px auto; padding: 20px; border: 2px solid #dc3545; border-radius: 10px; text-align: center; background-color: #fff5f5;">
+    <h2 style="color: #dc3545;">⚠️ Подтверждение удаления</h2>
+    <p style="font-size: 1.1em;">
+        Вы действительно хотите удалить водителя <strong>{{ driver.full_name }}</strong>? 
+        <br><small>(Это действие нельзя будет отменить)</small>
+    </p>
+
+    <form method="POST" style="margin-top: 20px;">
+        {% csrf_token %}
+        <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-size: 1em;">
+            Да, удалить навсегда
+        </button>
+        <a href="{% url 'driver_list' %}" style="display: inline-block; margin-left: 15px; color: #6c757d; text-decoration: none; border-bottom: 1px dashed;">
+            Отмена
+        </a>
+    </form>
+</div>
+{% endblock %}

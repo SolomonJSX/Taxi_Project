@@ -1,0 +1,186 @@
+﻿{% extends "taxi/base.html" %}
+
+{% block content %}
+<style>
+    /* Красивые карточки тарифов */
+    .tariff-container {
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+    }
+
+    .tariff-card input[type="radio"] {
+        display: none;
+    }
+
+    .tariff-card label {
+        display: block;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.3s;
+        width: 100%;
+        background: white;
+    }
+
+    .tariff-card input[type="radio"]:checked+label {
+        border-color: #ffc107;
+        background-color: #fff9e6;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .tariff-card i {
+        font-size: 1.5rem;
+        display: block;
+        margin-bottom: 5px;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card shadow p-4 border-0">
+                <h3 class="text-center mb-4"><i class="fas fa-route text-warning"></i> Новый заказ</h3>
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <strong>Ошибка заполнения:</strong>
+                    <ul>
+                        {% for field in form %}
+                        {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                        {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <form method="POST" id="orderForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="distance" value="5">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">ОТКУДА (ПУНКТ А)</label>
+                        <input type="text" name="point_a" id="id_point_a" class="form-control form-control-lg"
+                            placeholder="Левый клик по карте" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">КУДА (ПУНКТ Б)</label>
+                        <input type="text" name="point_b" id="id_point_b" class="form-control form-control-lg"
+                            placeholder="Правый клик по карте" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">ТАРИФ</label>
+                        <div class="tariff-container">
+                            {% for radio in form.tariff %}
+                            <div class="tariff-card flex-fill">
+                                {{ radio.tag }}
+                                <label for="{{ radio.id_for_label }}">
+                                    <i class="fas fa-taxi"></i>
+                                    {{ radio.choice_label }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if user.is_authenticated %}
+                    <div id="surge-info" class="alert alert-warning d-none mb-3 py-2">
+                        <i class="fas fa-bolt"></i>
+                        <small>Сейчас действует повышенный тариф из-за времени суток.</small>
+                    </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold py-3 mt-2 shadow-sm">
+                        ЗАКАЗАТЬ ТАКСИ
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card shadow border-0 overflow-hidden" style="height: 550px;">
+                <div id="map" style="width: 100%; height: 100%;"></div>
+            </div>
+            <div class="alert alert-dark mt-2 py-2 small text-center shadow-sm">
+                <span class="me-3"><i class="fas fa-mouse-pointer text-warning"></i> <strong>Левый клик:</strong>
+                    Откуда</span>
+                <span><i class="fas fa-mouse text-danger"></i> <strong>Правый клик:</strong> Куда</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://api-maps.yandex.ru/2.1/?apikey=eff20e48-2ed3-4fda-b04d-deb4fbe93810&lang=ru_RU"
+    type="text/javascript"></script>
+
+<script type="text/javascript">
+    const hour = new Date().getHours();
+    if (hour >= 23 || hour < 6) {
+        document.getElementById('surge-info').classList.remove('d-none');
+    }
+    ymaps.ready(init);
+
+    function init() {
+        var myMap = new ymaps.Map("map", {
+            center: [49.80, 73.10], // Караганда
+            zoom: 12,
+            controls: ['zoomControl', 'fullscreenControl']
+        });
+
+        // Переменные для хранения меток
+        var markerA = null;
+        var markerB = null;
+
+        // Общая функция для геокодирования и обновления полей
+        function setAddressByCoords(coords, inputId, type) {
+            ymaps.geocode(coords).then(function (res) {
+                var firstGeoObject = res.geoObjects.get(0);
+                var address = firstGeoObject.getAddressLine();
+
+                // 1. Записываем адрес в input
+                document.getElementById(inputId).value = address;
+
+                // 2. Обновляем метку на карте
+                if (type === 'A') {
+                    if (markerA) myMap.geoObjects.remove(markerA);
+                    markerA = new ymaps.Placemark(coords, {
+                        balloonContent: 'Откуда: ' + address
+                    }, {
+                        preset: 'islands#yellowDotIcon'
+                    });
+                    myMap.geoObjects.add(markerA);
+                } else {
+                    if (markerB) myMap.geoObjects.remove(markerB);
+                    markerB = new ymaps.Placemark(coords, {
+                        balloonContent: 'Куда: ' + address
+                    }, {
+                        preset: 'islands#redDotIcon'
+                    });
+                    myMap.geoObjects.add(markerB);
+                }
+            });
+        }
+
+        // ЛЕВЫЙ КЛИК — Пункт А
+        myMap.events.add('click', function (e) {
+            var coords = e.get('coords');
+            setAddressByCoords(coords, 'id_point_a', 'A');
+        });
+
+        // ПРАВЫЙ КЛИК — Пункт Б
+        myMap.events.add('contextmenu', function (e) {
+            // Отключаем системное меню браузера
+            e.preventDefault();
+
+            var coords = e.get('coords');
+            setAddressByCoords(coords, 'id_point_b', 'B');
+        });
+    }
+</script>
+{% endblock %}

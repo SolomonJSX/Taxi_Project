@@ -1,0 +1,91 @@
+{% extends "taxi/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div
+                    class="card-header {% if order.status == 'new' %}bg-primary{% elif order.status == 'in_progress' %}bg-warning{% else %}bg-success{% endif %} text-white text-center py-3">
+                    <h4 class="mb-0">
+                        {% if order.status == 'new' %}
+                        <i class="fas fa-search fa-spin"></i> Поиск водителя...
+                        {% elif order.status == 'in_progress' %}
+                        <i class="fas fa-car-side"></i> Водитель в пути!
+                        {% else %}
+                        <i class="fas fa-check-circle"></i> Поездка завершена
+                        {% endif %}
+                    </h4>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <h5 class="text-muted small fw-bold text-uppercase">Маршрут</h5>
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="fas fa-circle text-primary mt-1 me-3"></i>
+                                <div><strong>Откуда:</strong>
+                                    < br>{{ order.point_a }}
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-map-marker-alt text-danger mt-1 me-3"></i>
+                                <div><strong>Куда:</strong><br>{{ order.point_b }}</div>
+                            </div>
+                            <hr>
+                            <h5 class="text-muted small fw-bold text-uppercase">Детали</h5>
+                            <p>Тариф: <span class="badge bg-dark">{{ order.tariff.name }}</span></p>
+                            <p>Стоимость: <strong class="h4 text-success">{{ order.cost }} ₸</strong></p>
+                        </div>
+
+                        <div class="col-md-5 border-start">
+                            <h5 class="text-muted small fw-bold text-uppercase text-center">Ваш водитель</h5>
+                            {% if order.driver %}
+                            <div class="text-center mt-3">
+                                {% if order.driver.avatar %}
+                                <img src="{{ order.driver.avatar.url }}" class="rounded-circle mb-2"
+                                    style="width: 80px; height: 80px; object-fit: cover;">
+                                {% else %}
+                                <i class="fas fa-user-circle fa-4x text-secondary mb-2"></i>
+                                {% endif %}
+                                <h6>{{ order.driver.get_full_name }}</h6>
+                                <p class="text-muted small">Телефон: {{ order.driver.phone }}</p>
+                                <span class="badge bg-warning text-dark">Машина: {{
+                                    order.driver.car_set.first.brand|default:"Такси" }}</span>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary mb-3" role="status"></div>
+                                <p class="text-muted">Ищем ближайшую машину в Караганде...</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light d-flex justify-content-between">
+                    <a href="{% url 'index' %}" class="btn btn-outline-secondary">На главную</a>
+
+                    {% if order.status == 'new' %}
+                    <form action="{% url 'cancel_order' order.id %}" method="POST"
+                        onsubmit="return confirm('Вы уверены, что хотите отменить заказ?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger shadow-sm">
+                            <i class="fas fa-times-circle"></i> Отменить заказ
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if order.status == 'new' %}
+<script>
+    setTimeout(function () {
+        location.reload();
+    }, 10000); 
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+﻿{% extends "taxi/base.html" %}
+{% block content %}
+<h2>Список водителей</h2>
+<form action="{% url 'driver_search' %}" method="GET" style="margin-bottom: 20px;">
+    <input type="text" name="q" placeholder="Поиск по ФИО или ИИН..." value="{{ query|default:'' }}"
+        style="padding: 8px; width: 300px; border-radius: 4px; border: 1px solid #ccc;">
+    <button type="submit"
+        style="padding: 8px 15px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
+        Найти
+    </button>
+    {% if search_mode %}
+    <a href="{% url 'driver_list' %}" style="margin-left: 10px;">Сбросить</a>
+    {% endif %}
+</form>
+<table border="1" style="width:100%; border-collapse: collapse;">
+    <tr style="background-color: #eee;">
+        <th>ФИО (Метод)</th>
+        <th>Системный логин</th> <th>ИИН</th>
+        <th>Действия</th>
+    </tr>
+    {% for driver in drivers %}
+    <tr>
+        <td>{{ driver.get_full_name }}</td>
+        <td>{{ driver.user.username }}</td> <td>{{ driver.iin|default:"—" }}</td>
+        <td>
+            <a href="{% url 'driver_update' driver.user.id %}">✏️ Редактировать</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

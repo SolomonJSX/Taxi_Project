@@ -1,0 +1,39 @@
+{% extends "taxi/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4 text-center">
+            <div class="card p-4 shadow">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" class="rounded-circle img-thumbnail mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                {% else %}
+                    <img src="https://ui-avatars.com/api/?name={{ user.username }}&size=150" class="rounded-circle mb-3">
+                {% endif %}
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span class="badge bg-warning text-dark mb-2">{{ user.get_role_display }}</span>
+                <p class="text-muted">Email: {{ user.email }}</p>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card p-4 shadow">
+                <h3><i class="fas fa-user-cog"></i> Настройки профиля</h3>
+                <hr>
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Номер телефона</label>
+                        {{ form.phone }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Загрузить новый аватар</label>
+                        {{ form.avatar }}
+                    </div>
+                    <button type="submit" class="btn btn-primary px-4">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

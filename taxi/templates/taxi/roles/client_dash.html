@@ -1,0 +1,118 @@
+{% extends "taxi/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="fw-bold">Привет, {{ user.username }}! 👋</h2>
+            <p class="text-muted">Куда отправимся сегодня? Выберите пункт на карте и поехали!</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="badge bg-light text-dark p-2 border shadow-sm">
+                <i class="fas fa-wallet text-warning"></i> Бонусы: 0 ₸
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-5">
+            
+            {% if active_order %}
+            <div class="card shadow border-0 mb-4 overflow-hidden animate__animated animate__fadeInLeft">
+                <div class="card-header bg-warning text-dark fw-bold py-3">
+                    <i class="fas fa-clock"></i> ВАША ПОЕЗДКА СЕЙЧАС
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="badge {% if active_order.status == 'new' %}bg-primary{% else %}bg-success{% endif %} p-2">
+                            {{ active_order.get_status_display|upper }}
+                        </span>
+                        <strong class="text-success h5 mb-0">{{ active_order.cost }} ₸</strong>
+                    </div>
+                    <p class="mb-1 text-muted small">МАРШРУТ:</p>
+                    <p class="fw-bold mb-3">{{ active_order.point_a|truncatechars:30 }} → {{ active_order.point_b|truncatechars:30 }}</p>
+                    
+                    <a href="{% url 'order_detail' active_order.pk %}" class="btn btn-dark w-100 fw-bold py-2 shadow-sm">
+                        ОТКРЫТЬ ДЕТАЛИ И КАРТУ
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="card shadow border-0 mb-4 bg-dark text-white overflow-hidden">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-map-marked-alt fa-4x text-warning"></i>
+                    </div>
+                    <h4 class="fw-bold">Машина уже ждет!</h4>
+                    <p class="text-white-50 small">Среднее время подачи в Караганде — 5 минут.</p>
+                    <a href="{% url 'create_order' %}" class="btn btn-warning btn-lg w-100 fw-bold py-3 mt-2 shadow">
+                        <i class="fas fa-paper-plane"></i> ЗАКАЗАТЬ ТАКСИ
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="card border-0 bg-light p-3 text-center shadow-sm">
+                        <i class="fas fa-percentage text-danger mb-2"></i>
+                        <small class="fw-bold d-block">Акции</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card border-0 bg-light p-3 text-center shadow-sm">
+                        <i class="fas fa-headset text-primary mb-2"></i>
+                        <small class="fw-bold d-block">Поддержка</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold mb-0">Последние поездки</h4>
+                <a href="{% url 'order_history' %}" class="btn btn-link text-decoration-none text-warning fw-bold p-0">Смотреть все</a>
+            </div>
+
+            <div class="history-list">
+                {% for trip in recent_trips %}
+                <div class="card mb-2 shadow-sm border-0 trip-card">
+                    <div class="card-body d-flex justify-content-between align-items-center py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-light rounded-circle p-3 me-3 text-muted">
+                                <i class="fas fa-history"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-bold">{{ trip.point_b|truncatechars:40 }}</p>
+                                <small class="text-muted">{{ trip.date_time|date:"d.m.Y, H:i" }}</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-success">{{ trip.cost }} ₸</div>
+                            <span class="badge bg-light text-dark border small">{{ trip.tariff.name }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5 bg-white rounded shadow-sm border">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1048/1048313.png" style="width: 80px; opacity: 0.3;" class="mb-3">
+                    <p class="text-muted">Вы еще не совершали поездок.<br>Время исправить это!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .trip-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    .trip-card:hover {
+        transform: scale(1.01);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    }
+    .border-left-primary { border-left: 5px solid #ffc107; }
+</style>
+{% endblock %}

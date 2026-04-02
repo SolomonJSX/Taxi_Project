@@ -1,0 +1,67 @@
+{% extends "taxi/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">📊 Аналитический дашборд Менеджера</h2>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-primary text-white p-3">
+                <h6>Общий оборот</h6>
+                <h3>{{ total_revenue }} ₸</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-success text-white p-3">
+                <h6>Прибыль парка (10%)</h6>
+                <h3>{{ total_commission }} ₸</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-dark text-warning p-3">
+                <h6>Водителей в системе</h6>
+                <h3>{{ active_drivers }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm p-4">
+        <h5 class="card-title">Активность заказов за последние 7 дней</h5>
+        <hr>
+        <div style="height: 400px;">
+            <canvas id="ordersChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const ctx = document.getElementById('ordersChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'line', // Линейный график
+        data: {
+            labels: {{ labels|safe }}, // Метки из Django
+            datasets: [{
+                label: 'Количество заказов',
+                data: {{ data|safe }}, // Данные из Django
+                backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                borderColor: 'rgba(255, 193, 7, 1)',
+                borderWidth: 3,
+                tension: 0.4, // Делает линию плавной
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
