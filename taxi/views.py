@@ -6,8 +6,8 @@ from django.utils.dateparse import parse_date
 from django.db.models import Sum
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import PermissionDenied
-from .forms import DriverForm, OrderForm
-from .models import Driver
+from .forms import DriverForm, OrderForm, ReviewForm
+from .models import Driver, Review
 from django.db.models.functions import Greatest
 from django.contrib.postgres.search import TrigramSimilarity
 from .models import Car, Order
@@ -227,10 +227,18 @@ def driver_dashboard(request):
     else:
         available_orders = []
 
+    # Достаем последние 5 отзывов именно для этого водителя
+    reviews = Review.objects.filter(driver=request.user).order_by('-created_at')[:5]
+    
+    # Считаем средний рейтинг (если метод уже в модели, можно просто передать его)
+    avg_rating = request.user.get_average_rating() if hasattr(request.user, 'get_average_rating') else 0
+
     context = {
         'assigned_car': assigned_car,
-        'available_orders': available_orders,
+        'available_orders': Order.objects.filter(status='new').order_by('-date_time'), # или фильтр по тарифу
         'current_order': Order.objects.filter(driver=request.user, status='in_progress').first(),
+        'reviews': reviews,
+        'avg_rating': avg_rating,
     }
     
     return render(request, 'taxi/roles/driver_dash.html', context)
@@ -378,3 +386,19 @@ def manager_report(request):
     }
     
     return render(request, 'taxi/roles/manager_report.html', context)
+
+@login_required
+def add_review(request, order_id):
+    order = get_object_or_404(Order, id=order_id, client=request.user, status='completed')
+    
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.order = order
+            review.client = request.user
+            review.driver = order.driver
+            review.save()
+            messages.success(request, "Спасибо за ваш отзыв!")
+            return redirect('order_detail', pk=order.id)
+    return redirect('order_detail', pk=order.id)

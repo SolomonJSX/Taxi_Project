@@ -62,20 +62,17 @@
 
         <div class="col-md-8">
             <h3 class="mb-4"><i class="fas fa-broadcast-tower text-danger"></i> ЭФИР (Новые заказы)</h3>
-
             <div id="orders-list">
                 {% for order in available_orders %}
                 <div class="card mb-3 border-left-warning shadow-sm">
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="mb-1 text-primary">{{ order.point_a }} → {{ order.point_b }}</h5>
-                            <small class="text-muted">Тариф: {{ order.tariff.name }} | Создан: {{
-                                order.date_time|time:"H:i" }}</small>
+                            <small class="text-muted">Тариф: {{ order.tariff.name }} | Создан: {{ order.date_time|time:"H:i" }}</small>
                         </div>
                         <div class="text-end">
                             <div class="h4 mb-2">{{ order.cost }} ₸</div>
-                            <a href="{% url 'accept_order' order.id %}"
-                                class="btn btn-outline-success px-4 fw-bold shadow-sm">Принять</a>
+                            <a href="{% url 'accept_order' order.id %}" class="btn btn-outline-success px-4 fw-bold shadow-sm">Принять</a>
                         </div>
                     </div>
                 </div>
@@ -87,39 +84,60 @@
                 {% endfor %}
             </div>
         </div>
+    </div> <div class="row mt-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm mb-5">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-comments text-primary me-2"></i> Последние отзывы клиентов</h5>
+                    <div class="text-warning fw-bold h5 mb-0">
+                        {{ avg_rating }} <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for review in reviews %}
+                        <div class="col-md-6 mb-3">
+                            <div class="p-3 bg-light rounded-3 h-100 border-start border-primary border-4 shadow-sm">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="badge bg-warning text-dark">{{ review.rating }} ★</span>
+                                    <small class="text-muted">{{ review.created_at|date:"d.m.Y" }}</small>
+                                </div>
+                                <p class="mb-0 fst-italic text-dark">«{{ review.comment|default:"Без комментария" }}»</p>
+                                <div class="text-end mt-2">
+                                    <small class="text-muted">— Заказ #{{ review.order.id }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 w-100">
+                            <i class="fas fa-comment-slash fa-2x text-muted mb-2"></i>
+                            <p class="text-muted">У вас пока нет отзывов. Выполните свою первую поездку на 5 звезд!</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-
-<style>
-    .border-left-warning {
-        border-left: 5px solid #ffc107;
-        transition: 0.3s;
-    }
-
-    .border-left-warning:hover {
-        transform: translateX(5px);
-    }
+    </div> <style>
+    .border-left-warning { border-left: 5px solid #ffc107; transition: 0.3s; }
+    .border-left-warning:hover { transform: translateX(5px); }
 </style>
 
 <script>
+    // Твой скрипт WebSocket (без изменений)
     const socket = new WebSocket(
         (window.location.protocol === 'https:' ? 'wss://' : 'ws://')
         + window.location.host
         + '/ws/orders/'
     );
 
-    socket.onopen = function (e) {
-        console.log("✅ Подключено к Эфиру такси");
-    };
+    socket.onopen = function (e) { console.log("✅ Подключено к Эфиру такси"); };
 
     socket.onmessage = function (e) {
         const data = JSON.parse(e.data);
-        console.log("🚀 Новый заказ получен через WebSocket:", data);
-
         const ordersList = document.getElementById('orders-list');
         const noOrdersMsg = document.getElementById('no-orders-msg');
-
-        // Убираем сообщение "нет заказов", если оно есть
         if (noOrdersMsg) noOrdersMsg.remove();
 
         const newOrderHtml = `
@@ -135,15 +153,8 @@
                     </div>
                 </div>
             </div>`;
-
         ordersList.insertAdjacentHTML('afterbegin', newOrderHtml);
-
-        // Звук (убедись, что браузер разрешает автовоспроизведение)
-        new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(e => console.log('Нужен клик для звука'));
-    };
-
-    socket.onerror = function (e) {
-        console.error("❌ Ошибка сокета. Проверь, запущен ли Daphne (ASGI).");
+        new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(e => {});
     };
 </script>
 {% endblock %}

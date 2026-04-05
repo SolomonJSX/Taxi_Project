@@ -1,5 +1,5 @@
 ﻿from django import forms
-from .models import Driver, Order
+from .models import Driver, Order, Review
 
 
 class DriverForm(forms.ModelForm):
@@ -32,3 +32,13 @@ class OrderForm(forms.ModelForm):
             'point_b': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Куда'}),
             'tariff': forms.RadioSelect(attrs={'class': 'form-check-input'}),
         }
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment']
+        widgets = {
+            'rating': forms.Select(choices=[(i, f"{i} Звезд") for i in range(5, 0, -1)], attrs={'class': 'form-select'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Что вам понравилось или не понравилось?'}),
+        }
+

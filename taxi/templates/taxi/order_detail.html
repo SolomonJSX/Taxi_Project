@@ -5,15 +5,14 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-lg border-0">
-                <div
-                    class="card-header {% if order.status == 'new' %}bg-primary{% elif order.status == 'in_progress' %}bg-warning{% else %}bg-success{% endif %} text-white text-center py-3">
+                <div class="card-header {% if order.status == 'new' %}bg-primary{% elif order.status == 'in_progress' %}bg-warning{% else %}bg-success{% endif %} text-white text-center py-3">
                     <h4 class="mb-0">
                         {% if order.status == 'new' %}
-                        <i class="fas fa-search fa-spin"></i> Поиск водителя...
+                            <i class="fas fa-search fa-spin"></i> Поиск водителя...
                         {% elif order.status == 'in_progress' %}
-                        <i class="fas fa-car-side"></i> Водитель в пути!
+                            <i class="fas fa-car-side"></i> Водитель в пути!
                         {% else %}
-                        <i class="fas fa-check-circle"></i> Поездка завершена
+                            <i class="fas fa-check-circle"></i> Поездка завершена
                         {% endif %}
                     </h4>
                 </div>
@@ -24,9 +23,7 @@
                             <h5 class="text-muted small fw-bold text-uppercase">Маршрут</h5>
                             <div class="d-flex align-items-start mb-3">
                                 <i class="fas fa-circle text-primary mt-1 me-3"></i>
-                                <div><strong>Откуда:</strong>
-                                    < br>{{ order.point_a }}
-                                </div>
+                                <div><strong>Откуда:</strong><br>{{ order.point_a }}</div>
                             </div>
                             <div class="d-flex align-items-start">
                                 <i class="fas fa-map-marker-alt text-danger mt-1 me-3"></i>
@@ -41,29 +38,59 @@
                         <div class="col-md-5 border-start">
                             <h5 class="text-muted small fw-bold text-uppercase text-center">Ваш водитель</h5>
                             {% if order.driver %}
-                            <div class="text-center mt-3">
-                                {% if order.driver.avatar %}
-                                <img src="{{ order.driver.avatar.url }}" class="rounded-circle mb-2"
-                                    style="width: 80px; height: 80px; object-fit: cover;">
-                                {% else %}
-                                <i class="fas fa-user-circle fa-4x text-secondary mb-2"></i>
-                                {% endif %}
-                                <h6>{{ order.driver.get_full_name }}</h6>
-                                <p class="text-muted small">Телефон: {{ order.driver.phone }}</p>
-                                <span class="badge bg-warning text-dark">Машина: {{
-                                    order.driver.car_set.first.brand|default:"Такси" }}</span>
-                            </div>
+                                <div class="text-center mt-3">
+                                    {% if order.driver.avatar %}
+                                        <img src="{{ order.driver.avatar.url }}" class="rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
+                                    {% else %}
+                                        <i class="fas fa-user-circle fa-4x text-secondary mb-2"></i>
+                                    {% endif %}
+                                    <h6>{{ order.driver.get_full_name }}</h6>
+                                    <p class="text-muted small">Телефон: {{ order.driver.phone }}</p>
+                                    <span class="badge bg-warning text-dark">
+                                        Машина: {{ order.driver.driver_profile.cars.first.brand|default:"Такси" }}
+                                    </span>
+                                </div>
                             {% else %}
-                            <div class="text-center py-4">
-                                <div class="spinner-border text-primary mb-3" role="status"></div>
-                                <p class="text-muted">Ищем ближайшую машину в Караганде...</p>
-                            </div>
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                                    <p class="text-muted">Ищем ближайшую машину в Караганде...</p>
+                                </div>
                             {% endif %}
                         </div>
-                    </div>
-                </div>
-
-                <div class="card-footer bg-light d-flex justify-content-between">
+                    </div> {% if order.status == 'completed' %}
+                        <hr class="my-4">
+                        <div class="card border-0 shadow-sm bg-light">
+                            <div class="card-body">
+                                <h5 class="fw-bold mb-3"><i class="fas fa-star text-warning"></i> Ваша оценка поездки</h5>
+                                
+                                {% if order.review %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="h2 text-warning me-3 mb-0">{{ order.review.rating }} ★</div>
+                                        <p class="mb-0 fst-italic">«{{ order.review.comment }}»</p>
+                                    </div>
+                                {% else %}
+                                    <form action="{% url 'add_review' order.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Оцените работу водителя:</label>
+                                            <select name="rating" class="form-select w-auto">
+                                                <option value="5">5 ★★★★★ (Отлично)</option>
+                                                <option value="4">4 ★★★★ (Хорошо)</option>
+                                                <option value="3">3 ★★★ (Средне)</option>
+                                                <option value="2">2 ★★ (Плохо)</option>
+                                                <option value="1">1 ★ (Ужасно)</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <textarea name="comment" class="form-control" placeholder="Ваш отзыв поможет нам стать лучше..." rows="2"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning fw-bold">Отправить отзыв</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div> <div class="card-footer bg-light d-flex justify-content-between">
                     <a href="{% url 'index' %}" class="btn btn-outline-secondary">На главную</a>
 
                     {% if order.status == 'new' %}

@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Driver(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='driver_profile')
@@ -31,6 +32,11 @@ class Driver(models.Model):
             return f"Логин: {self.user.username}"
             
         return "Без имени"
+    
+    def get_average_rating(self):
+        # Считаем среднее по всем полученным отзывам
+        avg = Review.objects.filter(driver=self.user).aggregate(Avg('rating'))['rating__avg']
+        return round(avg, 1) if avg else "Нет оценок"
 
     def __str__(self):
         return self.get_full_name()
@@ -88,3 +94,22 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Заказ №{self.id} ({self.point_a} -> {self.point_b})"
+    
+class Review(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='review')
+    client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='left_reviews')
+    driver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_reviews')
+    
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        verbose_name="Оценка"
+    )
+    comment = models.TextField(blank=True, verbose_name="Отзыв")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Отзыв"
+        verbose_name_plural = "Отзывы"
+
+    def __str__(self):
+        return f"Отзыв на заказ #{self.order.id} — {self.rating}⭐️"

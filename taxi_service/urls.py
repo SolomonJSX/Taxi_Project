@@ -31,4 +31,5 @@ urlpatterns = [
     path('manager/report/', views.manager_report, name='manager_report'),
     path('order/<int:pk>/', views.order_detail, name='order_detail'),
     path('order/cancel/<int:pk>/', views.cancel_order, name='cancel_order'),
+    path('order/review/<int:order_id>/', views.add_review, name='add_review'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
