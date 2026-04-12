@@ -3,6 +3,7 @@ from django.db import models  # Исправленный импорт
 from taxi.models import Driver
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from django.db.models import Avg
 
 class CustomUser(AbstractUser):
     """Расширенная модель пользователя для Таксопарка."""
@@ -42,6 +43,12 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return f"{self.username} | {self.get_role_display()} | {self.balance} ₸"
+    
+    def get_average_rating(self):
+        # Импортируем внутри метода, чтобы избежать кругового импорта
+        from taxi.models import Review
+        avg = Review.objects.filter(driver=self).aggregate(Avg('rating'))['rating__avg']
+        return round(avg, 1) if avg else "Нет оценок"
     
 @receiver(post_save, sender=CustomUser)
 def create_driver_profile(sender, instance, created, **kwargs):

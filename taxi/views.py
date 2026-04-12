@@ -355,8 +355,10 @@ def cancel_order(request, pk):
     return redirect('index')
 
 @login_required
-@user_passes_test(is_admin)
 def manager_report(request):
+    if not is_admin(request.user):
+        raise PermissionDenied
+    
     # 1. Считаем заказы по дням за последнюю неделю
     today = timezone.now().date()
     week_ago = today - timedelta(days=7)
