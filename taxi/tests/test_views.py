@@ -2,6 +2,8 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
+from taxi.models import Order, Review, Tariff
+
 User = get_user_model()
 
 class SecurityTest(TestCase):
@@ -27,3 +29,28 @@ class SecurityTest(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+
+class ReviewViewTest(TestCase):
+    def setUp(self):
+        # Arrange
+        self.client = Client()
+        self.user1 = User.objects.create_user(username='john', role='client')
+        self.user2 = User.objects.create_user(username='hacker', role='client')
+        
+        # 1. СОЗДАЙ ТЕСТОВОГО ВОДИТЕЛЯ
+        self.driver_user = User.objects.create_user(username='driver_test', role='driver')
+        
+        self.tariff = Tariff.objects.create(name="Эконом", base_price=500, price_per_km=100)
+        
+        # 2. ПРИВЯЖИ ВОДИТЕЛЯ К ЗАКАЗУ
+        self.order = Order.objects.create(
+            client=self.user1,
+            driver=self.driver_user,  # Теперь у заказа есть водитель!
+            point_a="A", 
+            point_b="B",
+            tariff=self.tariff, 
+            cost=1000,
+            status='completed'
+        )
+        self.url = reverse('add_review', args=[self.order.id])
